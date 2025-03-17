@@ -1,3 +1,6 @@
+
+#Scanpy, PycistTarget, Cis-topicTarget and pycistopic codes; SCENIC+ pipeline at the end.
+
 #!/bin/bash
 #SBATCH -N 1
 #SBATCH -p shared # partition (queue)
@@ -7,7 +10,7 @@
 #SBATCH -o slurm.%N.%j.out # STDOUT
 #SBATCH -e slurm.%N.%j.err # STDERR
 #SBATCH --mail-type=ALL         # Type of email notification- BEGIN,END,FAIL,ALL
-#SBATCH --mail-user=msenevirathne@fas.harvard.edu
+#SBATCH --mail-user=xx@fas.harvard.edu
 python s1.py
 
 
@@ -22,24 +25,187 @@ python s1.py
 #SBATCH -o slurm.%N.%j.out # STDOUT
 #SBATCH -e slurm.%N.%j.err # STDERR
 #SBATCH --mail-type=ALL         # Type of email notification- BEGIN,END,FAIL,ALL
-#SBATCH --mail-user=msenevirathne@fas.harvard.edu
+#SBATCH --mail-user=xx@fas.harvard.edu
 snakemake --cores 10
-
-
-
 python s1.py
 
 
-Scenic+ input files 
-#Can get it from scanpy 
 
-or from Seurat
 
+
+
+#Scenic+ input files: RNA can Can get be obtained from scanpy or Seurat
+
+#1. Scanpy processing
+#Create an environment for scenicplus to run the analysis if it is not made already
+conda create --name scenicplus2 python=3.11
+conda activate scenicplus2
+
+
+#run these in the python environment
+which python
+
+
+import os
+
+#make a working directory folder "outs"
+work_dir = 'outs'
+import scanpy as sc
+
+
+#Read in the scRNA-seq count matrix into AnnData object.
+adata = sc.read_10x_h5(os.path.join(work_dir, 'data/filtered_feature_bc_matrix.h5'))
+adata.var_names_make_unique()
+adata
+
+
+#Basic quality control
+sc.pp.filter_cells(adata, min_genes=200)
+sc.pp.filter_genes(adata, min_cells=3)
+
+#predict and filter out doublets using Scrublet
+sc.external.pp.scrublet(adata) #estimates doublets
+
+adata = adata[adata.obs['predicted_doublet'] == False] #do the actual filtering
+adata
+
+
+#Filter based on mitochondrial counts and total counts.
+adata.var['mt'] = adata.var_names.str.startswith('MT-')  # annotate the group of mitochondrial genes as 'mt'
+sc.pp.calculate_qc_metrics(adata, qc_vars=['mt'], percent_top=None, log1p=False, inplace=True)
+import matplotlib.pyplot as plt
+mito_filter = 25
+n_counts_filter = 4300
+fig, axs = plt.subplots(ncols = 2, figsize = (8,4))
+sc.pl.scatter(adata, x='total_counts', y='pct_counts_mt', ax = axs[0], show=False)
+sc.pl.scatter(adata, x='total_counts', y='n_genes_by_counts', ax = axs[1], show = False)
+#draw horizontal red lines indicating thresholds.
+axs[0].hlines(y = mito_filter, xmin = 0, xmax = max(adata.obs['total_counts']), color = 'red', ls = 'dashed')
+axs[1].hlines(y = n_counts_filter, xmin = 0, xmax = max(adata.obs['total_counts']), color = 'red', ls = 'dashed')
+fig.tight_layout()
+plt.show()
+
+#filter out the mitochondrial genes
+adata = adata[adata.obs.n_genes_by_counts < n_counts_filter, :]
+adata = adata[adata.obs.pct_counts_mt < mito_filter, :]
+adata
+
+
+#Total-count normalize (library-size correct) the data matrix 
+sc.pp.normalize_total(adata, target_sum=1e4)
+
+#Logarithmize the data:
+sc.pp.log1p(adata)
+
+
+#highly variable genes
+sc.pp.highly_variable_genes(adata, min_mean=0.0125, max_mean=3, min_disp=0.5)
+sc.pl.highly_variable_genes(adata, save="celltopic_Heatmap.pdf")
+
+
+#add Set the .raw attribute of the AnnData object to the normalized and logarithmized raw gene expression for later use in differential testing and visualizations of gene expression
+adata.raw = adata
+
+
+#actually do the filtering
+adata = adata[:, adata.var.highly_variable]
+
+
+#Regress out effects of total counts per cell and the percentage of mitochondrial genes expressed
+sc.pp.regress_out(adata, ["total_counts", "pct_counts_mt"])
+
+#Scale each gene to unit variance. Clip values exceeding standard deviation 10
+sc.pp.scale(adata, max_value=10)
+
+#Reduce the dimensionality of the data by running principal component analysis (PCA)
+sc.tl.pca(adata, svd_solver="arpack")
+sc.pl.pca_variance_ratio(adata, log=True)
+adata
+
+#write the results file
+results_file = "IL_53.h5ad"
+
+#save the results file
+adata.write(results_file)
+
+
+#compute the neighborhood graph of cells using the PCA representation of the data matrix
+sc.pp.neighbors(adata, n_neighbors=10, n_pcs=40)
+
+#UMAP
+sc.tl.umap(adata)
+
+
+#Clustering the neighborhood graph
+sc.tl.leiden(
+    adata,
+    resolution=0.9,
+    random_state=0,
+    n_iterations=2,
+    directed=False,
+)
+
+#Plot the clusters, which agree quite well with the result of Seurat.
+sc.pl.umap(adata, color=["leiden"], save="UMAP.pdf")
+
+
+
+#Finding marker genes
+sc.tl.rank_genes_groups(adata, "leiden", method="t-test")
+sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False, save="marker_genes_cellClusters.pdf")
+
+sc.settings.verbosity = 2  # reduce the verbosity
+sc.tl.rank_genes_groups(adata, "leiden", method="wilcoxon")
+sc.pl.rank_genes_groups(adata, n_genes=25, sharey=False, save="marker_genes_cellClusters.pdf")
+
+#write the output with the Wilcoxon Rank-Sum test result.
+adata.write(results_file)
+
+
+#re-read the results file
+adata = sc.read(results_file)
+
+import pandas as pd
+
+#Show the 5 top ranked genes per cluster
+pd.DataFrame(adata.uns["rank_genes_groups"]["names"]).head(5)
+pd.DataFrame(adata.uns["rank_genes_groups"]["names"]).head(50)
+
+
+#Get a table with the scores and groups
+result = adata.uns["rank_genes_groups"]
+groups = result["names"].dtype.names
+pd.DataFrame(
+    {
+        group + "_" + key[:1]: result[key][group]
+        for group in groups
+        for key in ["names", "pvals"]
+    }
+).head(10)
+
+#generate a violin plot for individual genes
+sc.pl.violin(adata, ["SOX9", "UCMA", "TNMD"], groupby="leiden", save="DEG_Cluster.pdf")
+
+
+
+#rename the clusters
+new_cluster_names = ["0Ch","1CPr","2Pro","3Te","4Er","5Me","6Me","7Te","8PCho","9Oste","10Fib","11Me","12Fib","13Mes","14Fib","15Me","16MyoP","17Sch","18Fib"]
+adata.rename_categories("leiden", new_cluster_names)
+
+#save the UMAP with new names
+sc.pl.umap(
+    adata, color="leiden", legend_loc="on data", title="", frameon=False, save=".pdf")
+
+#write the raw.data file into a h5ad format
+adata.raw.to_adata().write("./adata.h5ad")
+
+
+#2. Seurat processing
 #cell_data table with annotations and barcodes for the input file for SCENIC+ 
 #to export barcodes and celltypes use R seurat dataset
 
 library(tibble)
-export_df <- pbmc@meta.data %>% 
+export_df <- IL@meta.data %>% 
   rownames_to_column("barcodes")
 
 head(export_df)
@@ -53,20 +219,9 @@ write.csv(export_df, "cell_data.csv")
 #scATAC-seq pre-procssing for SCENIC+
 #created a scenicplus enviornment with python 3.11
 
-#shell commands
-ssh msenevirathne@login.rc.fas.harvard.edu
-GandRo3147*
 
 source activate scenicplus2 #this can be used for all the pycistopic 
 
-#set the working directory
-cd /n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/Multiomics_E53_29271_August_Replicate01_hg38/count/E53_IL/outs/outs/scplus_pipeline/Snakemake
-
-
-cd /n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/Multiomics_E53_August_Replicate01_hg38/count/E53_IL/outs/outs/scplus_pipeline/Snakemake
-
-
-cd /n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E67_E72_2024_April_Hg38/RNA-seq/count/E67_IL/outs
 
 #copy the fragment.tz and fragment tx.tbi and the seurat output with cell annotation files into a data folder
 #all the scenic plus commands are written in python. 
@@ -401,8 +556,6 @@ pickle.dump(
 
 
 
-
-#### 
 ###########################################################
 
 #read the cistopicObj once the model data is added. can run it on the laptop
@@ -703,15 +856,8 @@ input_data:
 source activate scenicplus2
 
 
-#shell commands
-ssh msenevirathne@login.rc.fas.harvard.edu
-GandRo3147*
 
 source activate scenicplus2 #this can be used for all the pycistopic 
-
-#set the working directory
-
-cd /n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/Multiomics_E53_29271_August_Replicate01_hg38/count/E53_IL/outs/outs/scenic/scplus_pipeline/Snakemake
 
 
 
@@ -936,176 +1082,6 @@ def plot_mm_line_pca(ax):
 
 fig, ax = plt.subplots()
 plot_mm_line_pca(ax)
-
-
-
---------------------
--------------------
------------------------
------------------------
-
-######### How to compare with the Hi-c file (Original file: GSE200345_C28_HiC_megaMap_SIP_20kb_loops.bedpe;Diekman’s paper 
-### file name "chondrocyte_hic_interaction_data_anchors_HITTING_PROMOTERS_RES_WITH_SCORES.txt" V1:V3 being the left anchor, ‘chr’, ‘start’ and ‘stop’ referring to the right anchor. V6-V10 refers to the gene promoter I intersected with the anchor)
-
-#shell commands
-ssh msenevirathne@login.rc.fas.harvard.edu
-GandRo3147*
-
-source activate scenicplus2 #this can be used for all the pycistopic 
-
-#set the working directory
-cd /n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/Multiomics_E53_29271_August_Replicate01_hg38/count/E53_IL/outs/outs/scenic/scplus_pipeline/Snakemake
-
-
-
-#HiC-links
-
-
-import pandas as pd
-import pandas as pd
-
-#Extract the Promoter Anchor: I also copy pasted the promoter columns 6-9 and saved as a .bed file
-cut -f6-9 chondrocyte_hic_interaction.txt > hic_promoters.bed
-
-#Extract the enhancer 
-#Extract the Distal Anchor (Candidate Enhancer):
-#Choose the non-promoter anchor—in many cases this is the right anchor (columns 11–13). Create a BED file for these regions:
-#Identifying Candidate Enhancers
-    #•   Distal Anchors: In the context of Hi-C data, a distal anchor refers to a region that is not immediately adjacent to a promoter 
-      #but is linked via Hi-C interaction. These regions can potentially serve as enhancers.
-    #•   ATAC-seq Overlap: By overlapping distal Hi-C anchors with ATAC-seq data, which highlights regions of open chromatin, 
-    #researchers can identify which of these distal anchors are likely to be functional enhancers. 
-    #Open chromatin in distal anchors suggests that these regions are accessible to transcription factors and other regulatory proteins, which is a hallmark of enhancer activity.
-
-cut -f11-13 chondrocyte_hic_interaction_data_anchors_HITTING_PROMOTERS_RES_WITH_SCORES.txt > hic_distal.bed
-
-
-#ATAC‑seq .bed files mark regions of open chromatin, which are candidate enhancers. 
-#To test if the distal Hi‑C anchor is in an accessible region, use BEDTools to find overlaps between your ATAC‑seq peaks and the distal anchor BED file.
-
-bedtools intersect -a hic_distal.bed -b RestingChondro2_HARs_hg19.bed -wa -wb > HIC_RestingChondro2_HARs_hg19.txt
-
-bedtools intersect -a hic_distal.bed -b RestingChondro_HARs_hg19.bed -wa -wb > HIC_RestingChondro_HARs_hg19.txt
-
-bedtools intersect -a hic_distal.bed -b Perichondro+Osteoblasts_HARs_hg19.bed -wa -wb > HIC_Perichondro+Osteoblasts_HARs_hg19.txt
-
-bedtools intersect -a hic_distal.bed -b Perichondro+Osteoblasts_unipeaks_hg19.bed -wa -wb > HIC_Perichondro+Osteoblasts_unipeaks_hg19.txt
-
-
-
-
-
-
-
-bedtools intersect -a hic_distal.bed -b E53RestingChondro2_peaks.narrowPeak -wa -wb > E53HIC_RestingChondro2_distal_ATAC_overlap.txt
-
-bedtools intersect -a hic_distal.bed -b E53ChondroProg_commonpeaks.bed -wa -wb > E53HIC_ChondroProg_distal_HARs.txt
-
-bedtools intersect -a hic_distal.bed -b E53RestingChondro2_commonpeaks.bed -wa -wb > E53HIC_RestingChondro2_distal_HARs.txt
-
-bedtools intersect -a hic_distal.bed -b E53RestingChondro_commonpeaks.bed -wa -wb > E53HIC_RestingChondro_distal_HARs.txt
-
-
-#Next, I used the HiC overlapped files, and imported them to Juicebox, to visualize the loops. And mapped the cell-type peak files and HAR-overllaped ones on to the HiC file that I downloaded. 
-
-
-import pandas as pd
-
-
-hic_cols = [
-    "L_chr", "L_start", "L_end", "L_side", "L_ID",       # Left anchor
-    "P_chr", "P_start", "P_end", "Gene", "Window",         # Promoter anchor (with gene)
-    "R_chr", "R_start", "R_end", "R_side", "R_ID", "Score", "Orig"  # Right anchor (candidate enhancer)
-]
-
-
-#load the Hi-C file
-hic_df = pd.read_csv("chondrocyte_hic_interaction_data_anchors_HITTING_PROMOTERS_RES_WITH_SCORES.txt",
-                     sep="\t", names=hic_cols)
-
-
-# Define column names for the distal ATAC-seq overlap file.
-# Here we assume that the overlap file was created using:
-# bedtools intersect -a hic_distal.bed -b ATAC_peaks.bed -wa -wb > distal_ATAC_overlap.txt
-# And that hic_distal.bed has three columns: R_chr, R_start, R_end.
-# Followed by, say, four columns from the ATAC file: ATAC_chr, ATAC_start, ATAC_end, ATAC_info.
-overlap_cols = ["R_chr", "R_start", "R_end", "ATAC_chr", "ATAC_start", "ATAC_end", "ATAC_info"]
-
-
-# Load the overlap file
-overlap_df = pd.read_csv("distal_ATAC_overlap_PerichondroHARs.txt", sep="\t", names=overlap_cols)
-
-
-
-# Merge the Hi-C data with the ATAC overlap file on the distal anchor coordinates
-merged_df = pd.merge(hic_df, overlap_df, on=["R_chr", "R_start", "R_end"])
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Load the SCENIC+ output file (adjust the file path as necessary)
-scenic_file = "eRegulon_direct.tsv"
-df = pd.read_csv(scenic_file, sep="\t")
-
-# Inspect column names to identify those for TFs and targets
-print(df.columns)  # Look for columns like 'TF' and 'Target'
-
-# Extract the TF-target interactions and remove duplicates if needed
-tf_target_df = df[['TF', 'Gene']].drop_duplicates()
-
-# Save as an edge list suitable for network analysis or integration with other data (e.g., Hi-C)
-tf_target_df.to_csv("scenic_gene_links.txt", sep="\t", index=False, header=False)
-
-
-
-import pandas as pd
-
-# Load SCENIC+ TF-target file (adjust the path and delimiter as needed)
-scenic_df = pd.read_csv("scenic_gene_links.txt", sep="\t", names=["TF", "Target"])
-
-# Define column names for the Hi-C file based on its structure
-hic_cols = ["L_chr", "L_start", "L_end", "L_side", "L_ID",
-            "P_chr", "P_start", "P_end", "Gene", "Window",
-            "R_chr", "R_start", "R_end", "R_side", "R_ID", "Score", "Orig"]
-
-# Load the Hi-C data file (adjust path and delimiter as needed)
-hic_df = pd.read_csv("chondrocyte_hic_interaction.txt",
-                     sep="\t", names=hic_cols)
-
-# Merge SCENIC+ links with Hi-C data based on the target gene matching the promoter hit
-integrated_df = pd.merge(scenic_df, hic_df, left_on="Target", right_on="Gene", how="inner")
-
-# Optionally, you can filter by the Hi-C interaction score to retain high-confidence links:
-score_threshold = 0.02  # adjust threshold as appropriate
-integrated_df = integrated_df[integrated_df["Score"] >= score_threshold]
-
-# Save the integrated output for downstream analysis or visualization
-integrated_df.to_csv("integrated_TF_target_HiC.txt", sep="\t", index=False)
-
-
-
-#REMAIN THE UNIQUE INTERSECTIONS
-
-# Load the integrated file (adjust delimiter if needed)
-df = pd.read_csv("integrated_TF_target_HiC.txt", sep="\t")
-
-# Remove duplicates (if you want to consider all columns)
-df_unique = df.drop_duplicates()
-
-# Alternatively, to remove duplicates based on just the TF and Target columns:
-# df_unique = df.drop_duplicates(subset=["TF", "Target"])
-
-# Save the result to a new file
-df_unique.to_csv("integrated_TF_target_HiC_unique.txt", sep="\t", index=False)
 
 
 
