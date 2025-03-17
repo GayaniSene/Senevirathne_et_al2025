@@ -1,19 +1,11 @@
-#bedtools intersect for HAR-overlapping regions
+#bedtools intersect for HAR-overlapping regions 
 wc -l *bed
 wc -l *narrowPeak
 
-#shell commands
-ssh msenevirathne@login.rc.fas.harvard.edu
-GandRo3147*
 
-
+#activate the environment
 source activate singlecell2
 
-
-cd /n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/Multiomics_E53_29271_August_Replicate01_hg38/count/E53_IL/outs/outs/scenic/consensus_peak_calling/MACS
-
-
-cd /n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E67_29597_E72_29538_2024_April_Hg38/RNA-seq/count/E72_IL/outs/outs/consensus_peak_calling/MACS
 
 #first step is to get each peak file and overlap it with HARS. 
 #Here, -wa retains the peaks from the first .bed file when intersected with the second file. 
@@ -111,7 +103,6 @@ bedtools intersect -a TransMes_commonpeaks.bed -b total-transMes.bed -v > TransM
 
 -------------------- E57 --------------
 
-cd /n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_29508_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/consensus_peak_calling
 
 wc -l *bed
 
@@ -210,7 +201,6 @@ bedtools intersect -a VenousEndo_commonpeaks.bed -b total-venousendo.bed  -v > V
 
 
 
-cd /n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E67_29597_E72_29538_2024_April_Hg38/RNA-seq/count/E67_IL/outs/outs/consensus_peak_calling/MACS
 
 
 bedtools intersect -a ArterialEndo_peaks.narrowPeak -b HARS_hg38.bed -wa > ArterialEndo_commonpeaks.bed
@@ -296,7 +286,7 @@ bedtools intersect	 -a  TransMes_commonpeaks.bed	 -b	 total_TransMes.bed	 -v >	T
 
 
 
-
+---------------------------------- E72 ------------
 
 
 
@@ -373,11 +363,6 @@ cat Proliferating1_commonpeaks.bed	Proliferating2_commonpeaks.bed	RestingChondro
 
 cat Proliferating1_commonpeaks.bed	Proliferating2_commonpeaks.bed	RestingChondro_commonpeaks.bed	Schwann_commonpeaks.bed	TransMes_commonpeaks.bed	VenousEndo_commonpeaks.bed	Erythrocytes_commonpeaks.bed	Fibro1_commonpeaks.bed	Macrophages_commonpeaks.bed	Mes1_commonpeaks.bed	Mes2_commonpeaks.bed	Myocytes_commonpeaks.bed	MyoProg_commonpeaks.bed	Myoprog+Pax7_commonpeaks.bed	Neurons_commonpeaks.bed	Perichondrium_commonpeaks.bed	Perimysium_commonpeaks.bed	Perimysium2_commonpeaks.bed	 >> total-PrimaryErythro.bed
 
-
-
-
-
-bedtools intersect -a ArterialEndo_commonpeaks.bed -b total_Arterial.bed -v > Arterial_Endo_uni.bed	
 
 
 
