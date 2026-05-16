@@ -292,8 +292,6 @@ bedtools intersect	 -a  TransMes_commonpeaks.bed	 -b	 total_TransMes.bed	 -v >	T
 
 E72_IL unique peaks_commonpeaks
 
-cd /n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E67_29597_E72_29538_2024_April_Hg38/RNA-seq/count/E72_IL/outs/outs/consensus_peak_calling/MACS
-
 
 #bedtools intersect for HAR-overlapping regions
 wc -l *bed
