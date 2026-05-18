@@ -582,47 +582,6 @@ for cell_type in markers_dict:
 
 
 
-  input_data:
-  cisTopic_obj_fname: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/cistopic_obj.pkl"
-  GEX_anndata_fname: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/adata.h5ad"
-  region_set_folder: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/region_sets"
-  ctx_db_fname: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/hg38_screen_v10_clust.regions_vs_motifs.rankings.feather"
-  dem_db_fname: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/hg38_screen_v10_clust.regions_vs_motifs.scores.feather"
-  path_to_motif_annotations: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/motifs-v10nr_clust-nr.hgnc-m0.001-o0.0.tbl"
-
-output_data:
-  # output for prepare_GEX_ACC .h5mu
-  combined_GEX_ACC_mudata: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/ACC_GEX.h5mu"
-  # output for motif enrichment results .hdf5
-  dem_result_fname: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/dem_results.hdf5"
-  ctx_result_fname: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/ctx_results.hdf5"
-  # output html for motif enrichment results .html
-  output_fname_dem_html: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/dem_results.html"
-  output_fname_ctx_html: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/ctx_results.html"
-  # output for prepare_menr .h5ad
-  cistromes_direct: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/cistromes_direct.h5ad"
-  cistromes_extended: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/cistromes_extended.h5ad"
-  # output tf names .txt
-  tf_names: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/tf_names.txt"
-  # output for download_genome_annotations .tsv
-  genome_annotation: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/genome_annotation.tsv"
-  chromsizes: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/chromsizes.tsv"
-  # output for search_space .tsb
-  search_space: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/search_space.tsv"
-  # output tf_to_gene .tsv
-  tf_to_gene_adjacencies: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/tf_to_gene_adj.tsv"
-  # output region_to_gene .tsv
-  region_to_gene_adjacencies: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/region_to_gene_adj.tsv"
-  # output eGRN .tsv
-  eRegulons_direct: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/eRegulon_direct.tsv"
-  eRegulons_extended: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/eRegulons_extended.tsv"
-  # output AUCell .h5mu
-  AUCell_direct: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/AUCell_direct.h5mu"
-  AUCell_extended: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/AUCell_extended.h5mu"
-  # output scplus mudata .h5mu
-  scplus_mdata: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E57_multiomics_September2023_Hg38/count/E57_IL_multi/outs/filtered_feature_bc_matrix/outs/outs/scplusmdata.h5mu"
-
-
 
 
 #With the Scenic+ output data
