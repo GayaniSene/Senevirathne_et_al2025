@@ -294,8 +294,6 @@ cistopic_obj.cell_data
 
 #Move the cistopic object to the current working directory
 
-cd /n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/E67_E72_2024_April_Hg38/RNA-seq/count/E67_IL/outs
-
 
 wget https://github.com/mimno/Mallet/releases/download/v202108/Mallet-202108-bin.tar.gz
 !tar -xf Mallet-202108-bin.tar.gz
