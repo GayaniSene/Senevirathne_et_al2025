@@ -840,14 +840,6 @@ for cell_type in markers_dict:
 
 #edit the .yaml
 
-input_data:
-  cisTopic_obj_fname: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/Multiomics_E53_August_Replicate01_hg38/count/E53_IL/outs/outs/cistopic_obj.pkl"
-  GEX_anndata_fname: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/Multiomics_E53_August_Replicate01_hg38/count/E53_IL/outs/outs/adata.h5ad"
-  region_set_folder: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/Multiomics_E53_August_Replicate01_hg38/count/E53_IL/outs/outs/region_sets"
-  ctx_db_fname: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/Multiomics_E53_August_Replicate01_hg38/count/E53_IL/outs/outs/hg38_screen_v10_clust.regions_vs_motifs.rankings.feather"
-  dem_db_fname: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/Multiomics_E53_August_Replicate01_hg38/count/E53_IL/outs/outs/hg38_screen_v10_clust.regions_vs_motifs.scores.feather"
-  path_to_motif_annotations: "/n/boslfs02/LABS/capellini_lab/users/msenevirathne/Multiomics/Multiomics_E53_August_Replicate01_hg38/count/E53_IL/outs/outs/motifs-v10nr_clust-nr.hgnc-m0.001-o0.0.tbl"
-
 
 
 
